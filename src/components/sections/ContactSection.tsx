@@ -29,6 +29,7 @@ const ContactSection = () => {
     setIsSubmitting(true);
 
     try {
+      // Save to database
       const { error } = await supabase.from("contact_submissions").insert({
         name: formData.name,
         company: formData.company,
@@ -39,6 +40,23 @@ const ContactSection = () => {
       });
 
       if (error) throw error;
+
+      // Send email notification
+      const emailResponse = await supabase.functions.invoke("send-contact-notification", {
+        body: {
+          name: formData.name,
+          company: formData.company,
+          email: formData.email,
+          phone: formData.phone || null,
+          budget: formData.budget || null,
+          message: formData.message,
+        },
+      });
+
+      if (emailResponse.error) {
+        console.error("Email notification error:", emailResponse.error);
+        // Don't throw - form was still saved successfully
+      }
 
       toast({
         title: "Message sent!",
